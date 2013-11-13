@@ -22,3 +22,8 @@ jar {
         attributes 'Implementation-Title': 'load2neo', 'Implementation-Version': version
     }
 }
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '1.8'
+}
+
