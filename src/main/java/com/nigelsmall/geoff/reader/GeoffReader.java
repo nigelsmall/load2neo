@@ -483,17 +483,24 @@ public class GeoffReader {
                 this.readWhitespace();
                 this.readChar(':');
                 this.readWhitespace();
-                String key = null;
-                if (!this.nextCharEquals('=')) {
-                    key = this.readName();
+
+                List<String> keys = new ArrayList<>();
+
+                while (!this.nextCharEquals('=')) {
+                    keys.add(this.readName());
                     this.readWhitespace();
                     this.readChar(':');
                     this.readWhitespace();
                 }
                 this.readChar('=');
                 this.readChar('>');
+                boolean hookIsOptional = false;
+                if(this.nextCharEquals('?')) {
+                    this.readChar('?');
+                    hookIsOptional = true;
+                }
                 AbstractNode node = this.readNode();
-                subgraph.mergeNode(node).setHook(label, key);
+                subgraph.mergeNode(node).setHook(label, keys, hookIsOptional);
             } else  if(this.nextCharEquals('/')) {
                 subgraph.addComment(this.readComment());
             } else if(this.nextCharEquals('~')) {

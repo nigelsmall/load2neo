@@ -1,0 +1,7 @@
+(ingrid10 {"name":"Ingrid", "age":10})
+
+:Person:name:age:=>(ingrid20 {"name":"Ingrid", "age":20})
+:Person:name:age:=>?(ingrid30 {"name":"Ingrid", "age":30})
+
+(ingrid10)<-[:KNOWS]->(ingrid20)<-[:KNOWS]->(ingrid30)<-[:KNOWS]->(ingrid10)
+

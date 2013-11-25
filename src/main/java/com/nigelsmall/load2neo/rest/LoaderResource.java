@@ -69,7 +69,10 @@ public class LoaderResource {
                             writer.write(entry.getKey());
                             writer.write('"');
                             writer.write(':');
-                            writer.write(Long.toString(node.getId()));
+                            if(node != null)
+                                writer.write(Long.toString(node.getId()));
+                            else
+                                writer.write("null");
                             separator = ",";
                         }
                         writer.write("}\n");

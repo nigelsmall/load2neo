@@ -64,11 +64,36 @@
  *
  */
 
-:Person:name:=>(alice {"name":"Alice"})
-:Person:name:=>(bob {"name":"Bob"})
-:Person:name:=>(carol {"name":"Carol"})
+:Person:name:=>(alice {"name":"Alice", "age":20})
+:Person:name:=>(bob {"name":"Bob", "age":44})
+:Person:name:=>(carol {"name":"Carol", "age":34})
 
 (alice)<-[:KNOWS]->(bob)<-[:KNOWS]->(carol)<-[:KNOWS]->(alice)
+
+~~~~
+/*
+ * Triangle of bidirectional relationships for multiple key hooks
+ *
+ * @order 3
+ * @size 6
+ * @hook ingrid10 :Person name=Ingrid age=10
+ * @hook ingrid20 :Person name=Ingrid age=20
+ * @hook ingrid30 :Person name=Ingrid age=30
+ * @rel ingrid10 KNOWS ingrid20
+ * @rel ingrid10 KNOWS ingrid30
+ * @rel ingrid20 KNOWS ingrid10
+ * @rel ingrid20 KNOWS ingrid30
+ * @rel ingrid30 KNOWS ingrid10
+ * @rel ingrid30 KNOWS ingrid20
+ *
+ */
+
+:Person:name:age:=>(ingrid10 {"name":"Ingrid", "age":10})
+:Person:name:age:=>(ingrid20 {"name":"Ingrid", "age":20})
+:Person:name:age:=>?(ingrid30 {"name":"Ingrid", "age":30})
+
+(ingrid10)<-[:KNOWS]->(ingrid20)<-[:KNOWS]->(ingrid30)<-[:KNOWS]->(ingrid10)
+
 
 ~~~~
 /*
