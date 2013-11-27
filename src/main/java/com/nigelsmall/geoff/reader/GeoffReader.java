@@ -398,7 +398,9 @@ public class GeoffReader {
             List listValue = this.readArray();
             int listValueSize = listValue.size();
             if (listValueSize == 0) {
-                value = new Object[0];
+                // Zero arrays are not a good idea in Neo4j as we do not the actual item type, so just use null
+                // instead
+                value = null;
             } else if (listValue.get(0) instanceof String) {
                 value = listValue.toArray(new String[listValueSize]);
             } else if (listValue.get(0) instanceof Integer) {
