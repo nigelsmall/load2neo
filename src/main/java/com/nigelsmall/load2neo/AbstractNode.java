@@ -31,7 +31,8 @@ public class AbstractNode {
     private HashSet<String> labels;
     private HashMap<String, Object> properties;
     private String hookLabel;
-    private String hookKey;
+    private String[] hookKeys;
+    private boolean hookIsOptional;
 
     public AbstractNode(String name, Set<String> labels, Map<String, Object> properties) {
         if (name == null) {
@@ -69,10 +70,10 @@ public class AbstractNode {
         }
         if (this.hookLabel == null) {
             return "(" + StringUtils.join(parts, "") + ")";
-        } else if (this.hookKey == null) {
+        } else if (this.hookKeys == null) {
             return ":" + this.hookLabel + ":=>(" + StringUtils.join(parts, "") + ")";
         } else {
-            return ":" + this.hookLabel + ":" + this.hookKey + ":=>(" + StringUtils.join(parts, "") + ")";
+            return ":" + this.hookLabel + ":" + StringUtils.join(this.hookKeys, ":") + ":=>(" + StringUtils.join(parts, "") + ")";
         }
     }
 
@@ -82,6 +83,10 @@ public class AbstractNode {
 
     public boolean isNamed() {
         return this.named;
+    }
+
+    public boolean isHookOptional() {
+        return this.hookIsOptional;
     }
 
     public Set<String> getLabels() {
@@ -120,29 +125,35 @@ public class AbstractNode {
         }
     }
 
-    public void setHook(String label, String key) {
+    public void setHook(String label, List<String> keys, boolean hookIsOptional) {
         if (this.labels == null) {
             this.labels = new HashSet<>();
         }
+
         this.labels.add(label);
         this.hookLabel = label;
-        if (key != null) {
+        this.hookIsOptional = hookIsOptional;
+
+        if (keys != null) {
             if (this.properties == null) {
                 this.properties = new HashMap<>();
             }
-            if (!this.properties.containsKey(key)) {
-                this.properties.put(key, null);
+            for(String key : keys) {
+                if (!this.properties.containsKey(key)) {
+                    this.properties.put(key, null);
+                }
             }
+
+            this.hookKeys = keys.toArray(new String[keys.size()]);
         }
-        this.hookKey = key;
     }
 
     public String getHookLabel() {
         return this.hookLabel;
     }
 
-    public String getHookKey() {
-        return this.hookKey;
+    public String[] getHookKeys() {
+        return this.hookKeys;
     }
 
 }

@@ -20,10 +20,7 @@ import org.neo4j.graphdb.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class NeoLoader {
 
@@ -55,6 +52,7 @@ public class NeoLoader {
         // load nodes
         for (AbstractNode abstractNode : abstractNodes.values()) {
             Node node = this.createOrUpdateNode(abstractNode);
+
             nodes.put(abstractNode.getName(), node);
             if (abstractNode.isNamed()) {
                 namedNodes.put(abstractNode.getName(), node);
@@ -64,9 +62,11 @@ public class NeoLoader {
         for (AbstractRelationship abstractRelationship : abstractRelationships) {
             Node startNode = nodes.get(abstractRelationship.getStartNode().getName());
             Node endNode = nodes.get(abstractRelationship.getEndNode().getName());
-            DynamicRelationshipType type = DynamicRelationshipType.withName(abstractRelationship.getType());
-            Relationship rel = startNode.createRelationshipTo(endNode, type);
-            this.addProperties(rel, abstractRelationship.getProperties());
+            if(startNode != null && endNode != null) {
+                DynamicRelationshipType type = DynamicRelationshipType.withName(abstractRelationship.getType());
+                Relationship rel = startNode.createRelationshipTo(endNode, type);
+                this.addProperties(rel, abstractRelationship.getProperties());
+            }
         }
         // finish load
         long t1 = System.currentTimeMillis() - t0;
@@ -82,30 +82,68 @@ public class NeoLoader {
      * @return the concrete Node object that is either fetched or created
      */
     public Node createOrUpdateNode(AbstractNode abstractNode) {
-        Node node = null;
+        Node foundNode = null;
         String hookLabel = abstractNode.getHookLabel();
         // is this a hooked node?
         if (hookLabel != null) {
+
             // determine the label, key and value to look up
             Label label = DynamicLabel.label(hookLabel);
-            String hookKey = abstractNode.getHookKey();
+            String[] hookKeys = abstractNode.getHookKeys();
             Object hookValue = null;
-            if (abstractNode.getProperties().containsKey(hookKey)) {
-                hookValue = abstractNode.getProperties().get(hookKey);
+
+            // in order to support multiple keys we need to match each key separately
+            // and the final result is the intersection of all results
+            HashMap<Long, Node> matchingNodesById = new HashMap<>();
+
+            for(int i = 0; i < hookKeys.length; i++) {
+
+                String hookKey = hookKeys[i];
+
+                if (abstractNode.getProperties().containsKey(hookKey)) {
+                    hookValue = abstractNode.getProperties().get(hookKey);
+                }
+
+                Iterable<Node> nodesMatchingCurrentKey = database.findNodesByLabelAndProperty(label, hookKey, hookValue);
+
+                if(i == 0) {
+                    // first key, so add all matching nodes to result
+                    for(Node node : nodesMatchingCurrentKey)
+                        matchingNodesById.put(node.getId(), node);
+                }
+                else {
+                    // not first key, so remove items that are not present in this result
+                    // (effectively performing a continual intersection of the results)
+                    Iterator<Map.Entry<Long, Node>> it = matchingNodesById.entrySet().iterator();
+                    HashSet<Long> nodeIdsMatchingCurrentKey = new HashSet<>();
+
+                    for(Node node : nodesMatchingCurrentKey)
+                        nodeIdsMatchingCurrentKey.add(node.getId());
+
+                    while (it.hasNext()) {
+
+                        Long nodeId = it.next().getKey();
+
+                        if(!nodeIdsMatchingCurrentKey.contains(nodeId))
+                            it.remove();
+                    }
+                }
             }
-            // find the "first" node with the given label, key and value
-            for (Node foundNode : database.findNodesByLabelAndProperty(label, hookKey, hookValue)) {
-                node = foundNode;
-                break;
-            }
+
+            if(matchingNodesById.size() > 0)
+                foundNode = matchingNodesById.values().iterator().next();
         }
-        // if not hooked, or cannot find, create anew
-        if (node == null) {
-            node = database.createNode();
+
+        // if not hooked, or cannot find, create anew unless the hook is optional
+        if (foundNode == null) {
+            if(abstractNode.isHookOptional())
+                return null;
+            foundNode = database.createNode();
         }
-        this.addLabels(node, abstractNode.getLabels());
-        this.addProperties(node, abstractNode.getProperties());
-        return node;
+
+        this.addLabels(foundNode, abstractNode.getLabels());
+        this.addProperties(foundNode, abstractNode.getProperties());
+        return foundNode;
     }
 
     /**

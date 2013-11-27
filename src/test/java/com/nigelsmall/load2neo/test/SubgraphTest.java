@@ -38,7 +38,7 @@ public class SubgraphTest {
             for (String line : comment.split("\\n")) {
                 int at = line.indexOf("@");
                 if (at >= 0) {
-                    String[] args = line.substring(at).split(" ");
+                    String[] args = line.substring(at).split("\\s");
                     if (args.length >= 1) {
                         logger.info(args[0]);
                         switch (args[0]) {

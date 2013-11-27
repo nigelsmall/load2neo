@@ -398,7 +398,9 @@ public class GeoffReader {
             List listValue = this.readArray();
             int listValueSize = listValue.size();
             if (listValueSize == 0) {
-                value = new Object[0];
+                // Zero arrays are not a good idea in Neo4j as we do not the actual item type, so just use null
+                // instead
+                value = null;
             } else if (listValue.get(0) instanceof String) {
                 value = listValue.toArray(new String[listValueSize]);
             } else if (listValue.get(0) instanceof Integer) {
@@ -483,17 +485,24 @@ public class GeoffReader {
                 this.readWhitespace();
                 this.readChar(':');
                 this.readWhitespace();
-                String key = null;
-                if (!this.nextCharEquals('=')) {
-                    key = this.readName();
+
+                List<String> keys = new ArrayList<>();
+
+                while (!this.nextCharEquals('=')) {
+                    keys.add(this.readName());
                     this.readWhitespace();
                     this.readChar(':');
                     this.readWhitespace();
                 }
                 this.readChar('=');
                 this.readChar('>');
+                boolean hookIsOptional = false;
+                if(this.nextCharEquals('?')) {
+                    this.readChar('?');
+                    hookIsOptional = true;
+                }
                 AbstractNode node = this.readNode();
-                subgraph.mergeNode(node).setHook(label, key);
+                subgraph.mergeNode(node).setHook(label, keys, hookIsOptional);
             } else  if(this.nextCharEquals('/')) {
                 subgraph.addComment(this.readComment());
             } else if(this.nextCharEquals('~')) {
