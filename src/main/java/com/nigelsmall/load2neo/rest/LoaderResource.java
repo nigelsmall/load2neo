@@ -19,6 +19,7 @@ package com.nigelsmall.load2neo.rest;
 import com.nigelsmall.geoff.reader.GeoffReader;
 import com.nigelsmall.load2neo.NeoLoader;
 import com.nigelsmall.load2neo.Subgraph;
+import org.neo4j.cypher.UniquePathNotUniqueException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;

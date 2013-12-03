@@ -237,13 +237,19 @@ public class GeoffReader {
         map.put(key, value);
     }
 
-    private HashSet<String> readLabels() throws IOException {
-        HashSet<String> labels = new HashSet<>();
+    private String[] readLabelsInto(HashSet<String> labels) throws IOException {
+        String[] labelAndKey = new String[] {null, null};
         while (this.nextCharEquals(':')) {
             this.readChar(':');
-            labels.add(this.readName());
+            String label = this.readName();
+            labels.add(label);
+            if (this.nextCharEquals('!')) {
+                labelAndKey[0] = label;
+                this.readChar('!');
+                labelAndKey[1] = this.readName();
+            }
         }
-        return labels;
+        return labelAndKey;
     }
 
     private String readName() throws IOException {
@@ -262,6 +268,7 @@ public class GeoffReader {
         String name;
         HashSet<String> labels;
         HashMap<String, Object> properties;
+        String[] labelAndKey = new String[] {null, null};
         this.readChar('(');
         this.readWhitespace();
         if (this.nextCharEquals(')')) {
@@ -270,7 +277,8 @@ public class GeoffReader {
             properties = null;
         } else if (this.nextCharEquals(':')) {
             name = null;
-            labels = this.readLabels();
+            labels = new HashSet<>();
+            labelAndKey = this.readLabelsInto(labels);
             this.readWhitespace();
             if (this.nextCharEquals('{')) {
                 properties = this.readPropertyMap();
@@ -285,7 +293,8 @@ public class GeoffReader {
             name = this.readName();
             this.readWhitespace();
             if (this.nextCharEquals(':')) {
-                labels = this.readLabels();
+                labels = new HashSet<>();
+                labelAndKey = this.readLabelsInto(labels);
             } else {
                 labels = null;
             }
@@ -298,7 +307,9 @@ public class GeoffReader {
         }
         this.readWhitespace();
         this.readChar(')');
-        return new AbstractNode(name, labels, properties);
+        AbstractNode node = new AbstractNode(name, labels, properties);
+        node.setUnique(labelAndKey[0], labelAndKey[1]);
+        return node;
     }
 
     private Number readNumber() throws IOException {
@@ -363,13 +374,20 @@ public class GeoffReader {
         }
         this.readChar(':');
         String type = this.readName();
+        boolean unique;
+        if (this.nextCharEquals('!')) {
+            this.readChar('!');
+            unique = true;
+        } else {
+            unique = false;
+        }
         this.readWhitespace();
         AbstractRelationship rel;
         if (this.nextCharEquals('{')) {
-            rel = new AbstractRelationship(null, type, this.readPropertyMap(), null);
+            rel = new AbstractRelationship(null, type, this.readPropertyMap(), null, unique);
             this.readWhitespace();
         } else {
-            rel = new AbstractRelationship(null, type, null, null);
+            rel = new AbstractRelationship(null, type, null, null, unique);
         }
         this.readChar(']');
         return rel;
@@ -455,10 +473,10 @@ public class GeoffReader {
                         throw new GeoffReaderException("Lack of direction");
                     }
                     if ("<-".equals(arrow1)) {
-                        relationships.add(new AbstractRelationship(otherNode, rel.getType(), rel.getProperties(), node));
+                        relationships.add(new AbstractRelationship(otherNode, rel.getType(), rel.getProperties(), node, rel.isUnique()));
                     }
                     if ("->".equals(arrow2)) {
-                        relationships.add(new AbstractRelationship(node, rel.getType(), rel.getProperties(), otherNode));
+                        relationships.add(new AbstractRelationship(node, rel.getType(), rel.getProperties(), otherNode, rel.isUnique()));
                     }
                     node = otherNode;
                 }
@@ -493,7 +511,7 @@ public class GeoffReader {
                 this.readChar('=');
                 this.readChar('>');
                 AbstractNode node = this.readNode();
-                subgraph.mergeNode(node).setHook(label, key);
+                subgraph.mergeNode(node).setUnique(label, key);
             } else  if(this.nextCharEquals('/')) {
                 subgraph.addComment(this.readComment());
             } else if(this.nextCharEquals('~')) {

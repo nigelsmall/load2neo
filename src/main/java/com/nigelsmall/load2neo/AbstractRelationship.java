@@ -32,12 +32,14 @@ public class AbstractRelationship {
     private String type;
     private HashMap<String, Object> properties;
     private AbstractNode endNode;
+    private boolean unique;
 
-    public AbstractRelationship(AbstractNode startNode, String type, Map<String, Object> properties, AbstractNode endNode) {
+    public AbstractRelationship(AbstractNode startNode, String type, Map<String, Object> properties, AbstractNode endNode, boolean unique) {
         this.startNode = startNode;
         this.type = type;
         this.mergeProperties(properties);
         this.endNode = endNode;
+        this.unique = unique;
     }
 
     public String toString() {
@@ -94,6 +96,10 @@ public class AbstractRelationship {
 
     public void setEndNode(AbstractNode node) {
         this.endNode = node;
+    }
+
+    public boolean isUnique() {
+        return this.unique;
     }
 
 }

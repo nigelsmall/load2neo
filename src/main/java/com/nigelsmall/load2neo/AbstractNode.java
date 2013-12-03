@@ -30,8 +30,8 @@ public class AbstractNode {
     private boolean named;
     private HashSet<String> labels;
     private HashMap<String, Object> properties;
-    private String hookLabel;
-    private String hookKey;
+    private String uniqueLabel;
+    private String uniqueKey;
 
     public AbstractNode(String name, Set<String> labels, Map<String, Object> properties) {
         if (name == null) {
@@ -54,6 +54,9 @@ public class AbstractNode {
             String labels = "";
             for (String label : this.labels) {
                 labels += ":" + label;
+                if (label.equals(this.uniqueLabel)) {
+                    labels += "!" + uniqueKey;
+                }
             }
             parts.add(labels);
         }
@@ -67,13 +70,7 @@ public class AbstractNode {
                 //
             }
         }
-        if (this.hookLabel == null) {
-            return "(" + StringUtils.join(parts, "") + ")";
-        } else if (this.hookKey == null) {
-            return ":" + this.hookLabel + ":=>(" + StringUtils.join(parts, "") + ")";
-        } else {
-            return ":" + this.hookLabel + ":" + this.hookKey + ":=>(" + StringUtils.join(parts, "") + ")";
-        }
+        return "(" + StringUtils.join(parts, "") + ")";
     }
 
     public String getName() {
@@ -82,6 +79,10 @@ public class AbstractNode {
 
     public boolean isNamed() {
         return this.named;
+    }
+
+    public boolean isUnique() {
+        return this.uniqueLabel != null && this.uniqueKey != null;
     }
 
     public Set<String> getLabels() {
@@ -120,29 +121,29 @@ public class AbstractNode {
         }
     }
 
-    public void setHook(String label, String key) {
-        if (this.labels == null) {
-            this.labels = new HashSet<>();
-        }
-        this.labels.add(label);
-        this.hookLabel = label;
-        if (key != null) {
+    public void setUnique(String label, String key) {
+        if (label != null && key != null) {
+            if (this.labels == null) {
+                this.labels = new HashSet<>();
+            }
+            this.labels.add(label);
+            this.uniqueLabel = label;
             if (this.properties == null) {
                 this.properties = new HashMap<>();
             }
             if (!this.properties.containsKey(key)) {
                 this.properties.put(key, null);
             }
+            this.uniqueKey = key;
         }
-        this.hookKey = key;
     }
 
-    public String getHookLabel() {
-        return this.hookLabel;
+    public String getUniqueLabel() {
+        return this.uniqueLabel;
     }
 
-    public String getHookKey() {
-        return this.hookKey;
+    public String getUniqueKey() {
+        return this.uniqueKey;
     }
 
 }

@@ -48,30 +48,18 @@ public class SubgraphTest {
                             case "@size":
                                 this.assertSize(Integer.parseInt(args[1]));
                                 break;
-                            case "@hook":
-                                String hookName = args[1];
-                                this.assertHook(hookName);
-                                for (int i = 2; i < args.length; i++) {
-                                    String arg = args[i];
-                                    if (arg.startsWith(":")) {
-                                        this.assertNodeLabel(hookName, arg.substring(1));
-                                    } else {
-                                        int eq = arg.indexOf("=");
-                                        if (eq >= 0) {
-                                            this.assertNodeProperty(hookName, arg.substring(0, eq), arg.substring(eq + 1));
-                                        } else {
-                                            this.assertNodeProperty(hookName, arg, null);
-                                        }
-                                    }
-                                }
-                                break;
                             case "@node":
                                 String nodeName = args[1];
                                 this.assertNode(nodeName);
                                 for (int i = 2; i < args.length; i++) {
                                     String arg = args[i];
                                     if (arg.startsWith(":")) {
-                                        this.assertNodeLabel(nodeName, arg.substring(1));
+                                        int bang = arg.indexOf("!");
+                                        if (bang >= 0) {
+                                            this.assertNodeIsUnique(nodeName, arg.substring(1, bang), arg.substring(bang + 1));
+                                        } else {
+                                            this.assertNodeLabel(nodeName, arg.substring(1));
+                                        }
                                     } else {
                                         int eq = arg.indexOf("=");
                                         if (eq >= 0) {
@@ -84,9 +72,20 @@ public class SubgraphTest {
                                 break;
                             case "@rel":
                                 String startNodeName = args[1];
-                                String relType = args[2];
+                                String relType;
+                                boolean unique;
+                                if (args[2].endsWith("!")) {
+                                    relType = args[2].substring(0, args[2].length() - 1);
+                                    unique = true;
+                                } else {
+                                    relType = args[2];
+                                    unique = false;
+                                }
                                 String endNodeName = args[3];
                                 AbstractRelationship rel = this.assertRelationship(startNodeName, relType, endNodeName);
+                                if (unique) {
+                                    this.assertRelationshipIsUnique(rel);
+                                }
                                 for (int i = 4; i < args.length; i++) {
                                     String arg = args[i];
                                     int eq = arg.indexOf("=");
@@ -122,7 +121,7 @@ public class SubgraphTest {
 
     public void assertHook(String hookName) {
         System.out.println("assert hook " + hookName);
-        if (!this.nodes.containsKey(hookName) || this.nodes.get(hookName).getHookLabel() == null) {
+        if (!this.nodes.containsKey(hookName) || this.nodes.get(hookName).getUniqueLabel() == null) {
             throw new AssertionError("Subgraph does not contain hook \"" + hookName + "\"");
         }
     }
@@ -134,8 +133,22 @@ public class SubgraphTest {
         }
     }
 
+    public void assertNodeIsUnique(String nodeName, String label, String key) {
+        System.out.println("assert node " + nodeName + " is unique for label " + label + " and key " + key);
+        AbstractNode node = this.nodes.get(nodeName);
+        if (!node.isUnique()) {
+            throw new AssertionError("Node \"" + nodeName + "\" is not unique");
+        }
+        if (!label.equals(node.getUniqueLabel())) {
+            throw new AssertionError("Node \"" + nodeName + "\" does not have unique label " + label);
+        }
+        if (!key.equals(node.getUniqueKey())) {
+            throw new AssertionError("Node \"" + nodeName + "\" does not have unique key " + key);
+        }
+    }
+
     public void assertNodeLabel(String nodeName, String label) {
-        System.out.println("assert node label " + nodeName + ":" + label);
+        System.out.println("assert node " + nodeName + " has label " + label);
         Set<String> labels = this.nodes.get(nodeName).getLabels();
         if (labels == null) {
             labels = new HashSet<>();
@@ -175,6 +188,14 @@ public class SubgraphTest {
             }
         }
         throw new AssertionError("Subgraph does not contain relationship \"" + relString + "\"");
+    }
+
+    public void assertRelationshipIsUnique(AbstractRelationship rel) {
+        String relString = rel.toString();
+        System.out.println("assert rel " + relString + " is unique");
+        if (!rel.isUnique()) {
+            throw new AssertionError("Relationship \"" + relString + "\" is not unique");
+        }
     }
 
     public void assertRelationshipProperty(AbstractRelationship rel, String key, Object value) {

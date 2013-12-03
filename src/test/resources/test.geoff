@@ -52,9 +52,9 @@
  *
  * @order 3
  * @size 6
- * @hook alice :Person name=Alice
- * @hook bob :Person name=Bob
- * @hook carol :Person name=Carol
+ * @node alice :Person!name name=Alice
+ * @node bob :Person!name name=Bob
+ * @node carol :Person!name name=Carol
  * @rel alice KNOWS bob
  * @rel alice KNOWS carol
  * @rel bob KNOWS alice
@@ -69,6 +69,30 @@
 :Person:name:=>(carol {"name":"Carol"})
 
 (alice)<-[:KNOWS]->(bob)<-[:KNOWS]->(carol)<-[:KNOWS]->(alice)
+
+~~~~
+/*
+ * Triangle of unique bidirectional relationships
+ *
+ * @order 3
+ * @size 6
+ * @node alice :Person!name name=Alice
+ * @node bob :Person!name name=Bob
+ * @node carol :Person!name name=Carol
+ * @rel alice KNOWS! bob
+ * @rel alice KNOWS! carol
+ * @rel bob KNOWS! alice
+ * @rel bob KNOWS! carol
+ * @rel carol KNOWS! alice
+ * @rel carol KNOWS! bob
+ *
+ */
+
+(alice:Person!name {"name":"Alice"})
+(bob:Person!name {"name":"Bob"})
+(carol:Person!name {"name":"Carol"})
+
+(alice)<-[:KNOWS!]->(bob)<-[:KNOWS!]->(carol)<-[:KNOWS!]->(alice)
 
 ~~~~
 /*

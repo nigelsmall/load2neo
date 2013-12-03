@@ -16,7 +16,11 @@
 
 package com.nigelsmall.load2neo;
 
+import org.neo4j.cypher.UniquePathNotUniqueException;
+import org.neo4j.cypher.javacompat.ExecutionEngine;
+import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.*;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,9 +33,11 @@ public class NeoLoader {
 
     final private Logger logger = LoggerFactory.getLogger(NeoLoader.class);
     final private GraphDatabaseService database;
+    final private ExecutionEngine engine;
 
     public NeoLoader(GraphDatabaseService database) {
         this.database = database;
+        this.engine = new ExecutionEngine(this.database);
     }
 
     /**
@@ -54,7 +60,7 @@ public class NeoLoader {
         long t0 = System.currentTimeMillis();
         // load nodes
         for (AbstractNode abstractNode : abstractNodes.values()) {
-            Node node = this.createOrUpdateNode(abstractNode);
+            Node node = this.loadNode(abstractNode);
             nodes.put(abstractNode.getName(), node);
             if (abstractNode.isNamed()) {
                 namedNodes.put(abstractNode.getName(), node);
@@ -62,11 +68,7 @@ public class NeoLoader {
         }
         // load relationships
         for (AbstractRelationship abstractRelationship : abstractRelationships) {
-            Node startNode = nodes.get(abstractRelationship.getStartNode().getName());
-            Node endNode = nodes.get(abstractRelationship.getEndNode().getName());
-            DynamicRelationshipType type = DynamicRelationshipType.withName(abstractRelationship.getType());
-            Relationship rel = startNode.createRelationshipTo(endNode, type);
-            this.addProperties(rel, abstractRelationship.getProperties());
+            this.loadRelationship(abstractRelationship, nodes);
         }
         // finish load
         long t1 = System.currentTimeMillis() - t0;
@@ -75,37 +77,58 @@ public class NeoLoader {
     }
 
     /**
-     * Create a new node or update an existing one. An update will occur only
-     * if this is a hooked node specification and a match can be found.
+     * Create or merge a node. If this is a unique node, a merge will occur,
+     * otherwise a new node will be created.
      *
      * @param abstractNode an abstract node specification
      * @return the concrete Node object that is either fetched or created
      */
-    public Node createOrUpdateNode(AbstractNode abstractNode) {
+    public Node loadNode(AbstractNode abstractNode) {
         Node node = null;
-        String hookLabel = abstractNode.getHookLabel();
-        // is this a hooked node?
-        if (hookLabel != null) {
+        if (abstractNode.isUnique()) {
             // determine the label, key and value to look up
-            Label label = DynamicLabel.label(hookLabel);
-            String hookKey = abstractNode.getHookKey();
-            Object hookValue = null;
-            if (abstractNode.getProperties().containsKey(hookKey)) {
-                hookValue = abstractNode.getProperties().get(hookKey);
+            Label label = DynamicLabel.label(abstractNode.getUniqueLabel());
+            String uniqueKey = abstractNode.getUniqueKey();
+            Object uniqueValue = null;
+            if (abstractNode.getProperties().containsKey(uniqueKey)) {
+                uniqueValue = abstractNode.getProperties().get(uniqueKey);
             }
             // find the "first" node with the given label, key and value
-            for (Node foundNode : database.findNodesByLabelAndProperty(label, hookKey, hookValue)) {
+            for (Node foundNode : database.findNodesByLabelAndProperty(label, uniqueKey, uniqueValue)) {
                 node = foundNode;
                 break;
             }
         }
-        // if not hooked, or cannot find, create anew
+        // if not unique, or cannot find, create anew
         if (node == null) {
             node = database.createNode();
         }
         this.addLabels(node, abstractNode.getLabels());
         this.addProperties(node, abstractNode.getProperties());
         return node;
+    }
+
+    public void loadRelationship(AbstractRelationship abstractRelationship, HashMap<String, Node> nodes) {
+        Node startNode = nodes.get(abstractRelationship.getStartNode().getName());
+        Node endNode = nodes.get(abstractRelationship.getEndNode().getName());
+        if (abstractRelationship.isUnique()) {
+            String type = abstractRelationship.getType().replace("`", "``");
+            String query;
+            HashMap<String, Object> params = new HashMap<>(3);
+            params.put("a", startNode.getId());
+            params.put("b", endNode.getId());
+            if (abstractRelationship.getProperties() == null) {
+                query = "START a=node({a}), b=node({b}) CREATE UNIQUE (a)-[ab:`" + type + "`]->(b) RETURN ab";
+            } else {
+                query = "START a=node({a}), b=node({b}) CREATE UNIQUE (a)-[ab:`" + type + "` {p}]->(b) RETURN ab";
+                params.put("p", abstractRelationship.getProperties());
+            }
+            this.engine.execute(query, params);
+        } else {
+            DynamicRelationshipType type = DynamicRelationshipType.withName(abstractRelationship.getType());
+            Relationship rel = startNode.createRelationshipTo(endNode, type);
+            this.addProperties(rel, abstractRelationship.getProperties());
+        }
     }
 
     /**
