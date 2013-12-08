@@ -1,7 +1,7 @@
 /*
  * Node label and property combinations
  *
- * @order 23
+ * @order 24
  * @size 0
  * @node a
  * @node b foo=bar
@@ -45,6 +45,8 @@
 (l {"truth": true, "falsehood": false, "answers": [true, false, true, true, false]})
 (m {"nothing": null})
 (n {"τ": 6.283185307179586, "L": 6.0221413e+23, "reals": [1.2, 3.4, 5.6, 7.8, 9.0], "mixed1": [1, 2.3, 4], "mixed2": [1.2, 3, 4.5]})
+
+("x y \"z\"":Foo {"foo":"bar"})
 
 ~~~~
 /*
