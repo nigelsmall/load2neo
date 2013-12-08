@@ -375,20 +375,32 @@ public class GeoffReader {
         this.readChar(':');
         String type = this.readName();
         boolean unique;
+        String uniqueKey = null;
         if (this.nextCharEquals('!')) {
             this.readChar('!');
             unique = true;
+            if (this.hasMore()) {
+                char ch = this.peek();
+                if (!Character.isWhitespace(ch) && ch != ']' && ch != '{') {
+                    uniqueKey = this.readName();
+                }
+            }
         } else {
             unique = false;
         }
         this.readWhitespace();
         AbstractRelationship rel;
+        Map<String, Object> properties = null;
         if (this.nextCharEquals('{')) {
-            rel = new AbstractRelationship(null, type, this.readPropertyMap(), null, unique);
+            properties = this.readPropertyMap();
             this.readWhitespace();
-        } else {
-            rel = new AbstractRelationship(null, type, null, null, unique);
         }
+        if (uniqueKey == null) {
+            rel = new AbstractRelationship(null, type, properties, null, unique);
+        } else {
+            rel = new AbstractRelationship(null, type, properties, null, uniqueKey);
+        }
+        this.readWhitespace();
         this.readChar(']');
         return rel;
     }

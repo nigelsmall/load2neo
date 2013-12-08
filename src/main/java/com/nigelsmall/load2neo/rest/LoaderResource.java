@@ -19,7 +19,6 @@ package com.nigelsmall.load2neo.rest;
 import com.nigelsmall.geoff.reader.GeoffReader;
 import com.nigelsmall.load2neo.NeoLoader;
 import com.nigelsmall.load2neo.Subgraph;
-import org.neo4j.cypher.UniquePathNotUniqueException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -28,7 +27,6 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
 import java.io.*;
@@ -85,13 +83,6 @@ public class LoaderResource {
 
         return Response.status(Response.Status.OK).entity(stream).build();
 
-    }
-
-    @POST
-    @Produces("text/x-tab-separated-json")
-    @Path("/xml")
-    public Response loadXML(Reader reader) {
-        return null;
     }
 
 }

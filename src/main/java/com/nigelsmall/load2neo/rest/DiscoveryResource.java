@@ -32,7 +32,7 @@ public class DiscoveryResource {
     @Produces("application/json")
     public Response getServiceIndex(@Context UriInfo info) {
         String absolutePath = info.getAbsolutePath().toString();
-        String index = "{\n    \"geoff_loader\": \"" + absolutePath + "load/geoff\",\n    \"load2neo_version\": \"0.3.0\"\n}\n";
+        String index = "{\n    \"geoff_loader\": \"" + absolutePath + "load/geoff\",\n    \"load2neo_version\": \"0.4.0\"\n}\n";
         return Response.status(Response.Status.OK).entity(index).build();
     }
 

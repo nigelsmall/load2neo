@@ -16,11 +16,7 @@
 
 package com.nigelsmall.load2neo;
 
-import org.neo4j.cypher.UniquePathNotUniqueException;
-import org.neo4j.cypher.javacompat.ExecutionEngine;
-import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.*;
-import org.neo4j.helpers.collection.IteratorUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,11 +29,27 @@ public class NeoLoader {
 
     final private Logger logger = LoggerFactory.getLogger(NeoLoader.class);
     final private GraphDatabaseService database;
-    final private ExecutionEngine engine;
+    final private HashMap<String, Label> labelCache;
+    final private HashMap<String, RelationshipType> typeCache;
 
     public NeoLoader(GraphDatabaseService database) {
         this.database = database;
-        this.engine = new ExecutionEngine(this.database);
+        this.labelCache = new HashMap<String, Label>();
+        this.typeCache = new HashMap<String, RelationshipType>();
+    }
+
+    private Label getLabel(String name) {
+        if (!this.labelCache.containsKey(name)) {
+            this.labelCache.put(name, DynamicLabel.label(name));
+        }
+        return this.labelCache.get(name);
+    }
+
+    private RelationshipType getType(String name) {
+        if (!this.typeCache.containsKey(name)) {
+            this.typeCache.put(name, DynamicRelationshipType.withName(name));
+        }
+        return this.typeCache.get(name);
     }
 
     /**
@@ -87,12 +99,9 @@ public class NeoLoader {
         Node node = null;
         if (abstractNode.isUnique()) {
             // determine the label, key and value to look up
-            Label label = DynamicLabel.label(abstractNode.getUniqueLabel());
+            Label label = this.getLabel(abstractNode.getUniqueLabel());
             String uniqueKey = abstractNode.getUniqueKey();
-            Object uniqueValue = null;
-            if (abstractNode.getProperties().containsKey(uniqueKey)) {
-                uniqueValue = abstractNode.getProperties().get(uniqueKey);
-            }
+            Object uniqueValue = abstractNode.getUniqueValue();
             // find the "first" node with the given label, key and value
             for (Node foundNode : database.findNodesByLabelAndProperty(label, uniqueKey, uniqueValue)) {
                 node = foundNode;
@@ -103,31 +112,57 @@ public class NeoLoader {
         if (node == null) {
             node = database.createNode();
         }
-        this.addLabels(node, abstractNode.getLabels());
-        this.addProperties(node, abstractNode.getProperties());
+        this.setLabels(node, abstractNode.getLabels());
+        this.setProperties(node, abstractNode.getProperties());
         return node;
     }
 
     public void loadRelationship(AbstractRelationship abstractRelationship, HashMap<String, Node> nodes) {
         Node startNode = nodes.get(abstractRelationship.getStartNode().getName());
         Node endNode = nodes.get(abstractRelationship.getEndNode().getName());
+        RelationshipType type = this.getType(abstractRelationship.getType());
+        Map<String, Object> properties = abstractRelationship.getProperties();
+        Relationship rel;
         if (abstractRelationship.isUnique()) {
-            String type = abstractRelationship.getType().replace("`", "``");
-            String query;
-            HashMap<String, Object> params = new HashMap<>(3);
-            params.put("a", startNode.getId());
-            params.put("b", endNode.getId());
-            if (abstractRelationship.getProperties() == null) {
-                query = "START a=node({a}), b=node({b}) CREATE UNIQUE (a)-[ab:`" + type + "`]->(b) RETURN ab";
+            String uniqueKey = abstractRelationship.getUniqueKey();
+            if (uniqueKey == null) {
+                rel = mergeRelationship(startNode, endNode, type);
             } else {
-                query = "START a=node({a}), b=node({b}) CREATE UNIQUE (a)-[ab:`" + type + "` {p}]->(b) RETURN ab";
-                params.put("p", abstractRelationship.getProperties());
+                rel = mergeRelationship(startNode, endNode, type, uniqueKey, abstractRelationship.getUniqueValue());
             }
-            this.engine.execute(query, params);
         } else {
-            DynamicRelationshipType type = DynamicRelationshipType.withName(abstractRelationship.getType());
-            Relationship rel = startNode.createRelationshipTo(endNode, type);
-            this.addProperties(rel, abstractRelationship.getProperties());
+            rel = startNode.createRelationshipTo(endNode, type);
+        }
+        this.setProperties(rel, properties);
+    }
+
+    public Relationship mergeRelationship(Node startNode, Node endNode, RelationshipType type) {
+        Relationship existingRelationship = null;
+        for (Relationship rel : startNode.getRelationships(type, Direction.OUTGOING)) {
+            if (rel.getEndNode().equals(endNode)) {
+                existingRelationship = rel;
+                break;
+            }
+        }
+        if (existingRelationship == null) {
+            return startNode.createRelationshipTo(endNode, type);
+        } else {
+            return existingRelationship;
+        }
+    }
+
+    public Relationship mergeRelationship(Node startNode, Node endNode, RelationshipType type, String key, Object value) {
+        Relationship existingRelationship = null;
+        for (Relationship rel : startNode.getRelationships(type, Direction.OUTGOING)) {
+            if (rel.getEndNode().equals(endNode) && rel.hasProperty(key) && rel.getProperty(key).equals(value)) {
+                existingRelationship = rel;
+                break;
+            }
+        }
+        if (existingRelationship == null) {
+            return startNode.createRelationshipTo(endNode, type);
+        } else {
+            return existingRelationship;
         }
     }
 
@@ -137,11 +172,11 @@ public class NeoLoader {
      * @param node the destination Node to which to add the labels
      * @param labels a set of strings containing label names
      */
-    public void addLabels(Node node, Set<String> labels) {
+    public void setLabels(Node node, Set<String> labels) {
         if (labels == null)
             return;
         for (String label : labels) {
-            node.addLabel(DynamicLabel.label(label));
+            node.addLabel(this.getLabel(label));
         }
     }
 
@@ -151,7 +186,7 @@ public class NeoLoader {
      * @param entity the destination Node or Relationship to which to add the properties
      * @param properties a Map of key-value property pairs
      */
-    public void addProperties(PropertyContainer entity, Map<String, Object> properties) {
+    public void setProperties(PropertyContainer entity, Map<String, Object> properties) {
         if (properties == null)
             return;
         for (Map.Entry<String, Object> entry : properties.entrySet()) {

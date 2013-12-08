@@ -146,4 +146,12 @@ public class AbstractNode {
         return this.uniqueKey;
     }
 
+    public Object getUniqueValue() {
+        if (this.properties.containsKey(uniqueKey)) {
+            return this.properties.get(uniqueKey);
+        } else {
+            return null;
+        }
+    }
+
 }

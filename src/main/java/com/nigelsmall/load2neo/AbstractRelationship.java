@@ -33,13 +33,23 @@ public class AbstractRelationship {
     private HashMap<String, Object> properties;
     private AbstractNode endNode;
     private boolean unique;
+    private String uniqueKey;
 
-    public AbstractRelationship(AbstractNode startNode, String type, Map<String, Object> properties, AbstractNode endNode, boolean unique) {
+    public AbstractRelationship(AbstractNode startNode, String type, Map<String, Object> properties, AbstractNode endNode) {
         this.startNode = startNode;
         this.type = type;
         this.mergeProperties(properties);
         this.endNode = endNode;
+    }
+
+    public AbstractRelationship(AbstractNode startNode, String type, Map<String, Object> properties, AbstractNode endNode, boolean unique) {
+        this(startNode, type, properties, endNode);
         this.unique = unique;
+    }
+
+    public AbstractRelationship(AbstractNode startNode, String type, Map<String, Object> properties, AbstractNode endNode, String uniqueKey) {
+        this(startNode, type, properties, endNode, true);
+        this.uniqueKey = uniqueKey;
     }
 
     public String toString() {
@@ -48,6 +58,12 @@ public class AbstractRelationship {
         parts.add(this.startNode.getName());
         parts.add(")-[:");
         parts.add(this.type);
+        if (this.unique) {
+            parts.add("!");
+            if (this.uniqueKey != null) {
+                parts.add(this.uniqueKey);
+            }
+        }
         if (this.properties != null) {
             if (parts.size() > 0) {
                 parts.add(" ");
@@ -66,10 +82,6 @@ public class AbstractRelationship {
 
     public AbstractNode getStartNode() {
         return this.startNode;
-    }
-
-    public void setStartNode(AbstractNode node) {
-        this.startNode = node;
     }
 
     public String getType() {
@@ -94,12 +106,20 @@ public class AbstractRelationship {
         return this.endNode;
     }
 
-    public void setEndNode(AbstractNode node) {
-        this.endNode = node;
-    }
-
     public boolean isUnique() {
         return this.unique;
+    }
+
+    public String getUniqueKey() {
+        return this.uniqueKey;
+    }
+
+    public Object getUniqueValue() {
+        if (this.properties.containsKey(uniqueKey)) {
+            return this.properties.get(uniqueKey);
+        } else {
+            return null;
+        }
     }
 
 }
