@@ -42,7 +42,7 @@ public class LoaderResource {
     }
 
     @POST
-    @Produces("text/x-tab-separated-json")
+    @Produces("text/x-tab-separated-json; charset=UTF-8")
     @Path("/geoff")
     public Response loadGeoff(Reader reader) {
 
