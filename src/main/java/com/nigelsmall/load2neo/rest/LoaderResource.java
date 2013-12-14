@@ -30,10 +30,14 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
 import java.io.*;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetEncoder;
 import java.util.Map;
 
 @Path("/load")
 public class LoaderResource {
+
+    private final static CharsetEncoder UTF_ENCODER = Charset.forName("UTF-8").newEncoder();
 
     private final GraphDatabaseService database;
 
@@ -53,8 +57,7 @@ public class LoaderResource {
 
             @Override
             public void write(OutputStream os) throws IOException {
-                Writer writer = new BufferedWriter(new OutputStreamWriter(os));
-                int subgraphNumber = 0;
+                Writer writer = new BufferedWriter(new OutputStreamWriter(os, UTF_ENCODER));
                 while (geoffReader.hasMore()) {
                     Subgraph subgraph = geoffReader.readSubgraph();
                     try (Transaction tx = database.beginTx()) {
@@ -75,7 +78,6 @@ public class LoaderResource {
                         writer.flush();
                         tx.success();
                     }
-                    subgraphNumber += 1;
                 }
             }
 
