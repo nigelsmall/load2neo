@@ -25,7 +25,11 @@ jar {
     }
 }
 
+task dist(type: Zip) {
+    from jar.outputs.files
+    from 'src/main/resources/neo4j-server.properties'
+}
+
 task wrapper(type: Wrapper) {
     gradleVersion = '1.8'
 }
-
