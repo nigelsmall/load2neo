@@ -11,9 +11,10 @@ comment        := "/*" <<any text excluding sequence "*/">> "*/"
 
 hook           := ":" ~ label [~ ":" ~ key] ~ ":" "=>" node
 
-path           := node (forward_path | reverse_path)*
+path           := node (forward_path | reverse_path | two_way_path)*
 forward_path   := "-" relationship "->" node
 reverse_path   := "<-" relationship "-" node
+two_way_path   := "<-" relationship "->" node
 
 node           := named_node | anonymous_node
 named_node     := "(" ~ node_name [_ label_list] [_ property_map] ~ ")"
