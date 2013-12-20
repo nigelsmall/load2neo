@@ -37,7 +37,7 @@ import java.util.Map;
 @Path("/load")
 public class LoaderResource {
 
-    private final static CharsetEncoder UTF_ENCODER = Charset.forName("UTF-8").newEncoder();
+    private final static CharsetEncoder UTF8_ENCODER = Charset.forName("UTF-8").newEncoder();
 
     private final GraphDatabaseService database;
 
@@ -57,7 +57,7 @@ public class LoaderResource {
 
             @Override
             public void write(OutputStream os) throws IOException {
-                Writer writer = new BufferedWriter(new OutputStreamWriter(os, UTF_ENCODER));
+                Writer writer = new BufferedWriter(new OutputStreamWriter(os, UTF8_ENCODER));
                 while (geoffReader.hasMore()) {
                     Subgraph subgraph = geoffReader.readSubgraph();
                     try (Transaction tx = database.beginTx()) {
