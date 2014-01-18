@@ -1,5 +1,5 @@
 /*
- * Copyright 2013, Nigel Small
+ * Copyright 2013-2014, Nigel Small
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.nigelsmall.load2neo.rest;
+package com.nigelsmall.load2neo;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -32,7 +32,7 @@ public class DiscoveryResource {
     @Produces("application/json")
     public Response getServiceIndex(@Context UriInfo info) {
         String absolutePath = info.getAbsolutePath().toString();
-        String index = "{\n    \"geoff_loader\": \"" + absolutePath + "load/geoff\",\n    \"load2neo_version\": \"0.4.2\"\n}\n";
+        String index = "{\n    \"geoff_loader\": \"" + absolutePath + "load/geoff\",\n    \"load2neo_version\": \"0.5.0\"\n}\n";
         return Response.status(Response.Status.OK).entity(index).build();
     }
 

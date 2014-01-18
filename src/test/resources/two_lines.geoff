@@ -1,2 +1,0 @@
-:Person:name:=>(alice) :Person:name:=>(bob)
-(alice {"name":"Alice"}) (bob {"name":"Bob"}) (alice)-[:KNOWS]->(bob)

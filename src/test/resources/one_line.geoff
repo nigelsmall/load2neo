@@ -1,1 +1,0 @@
-(alice {"name":"Alice"}) (bob {"name":"Bob"}) (alice)-[:KNOWS]->(bob)

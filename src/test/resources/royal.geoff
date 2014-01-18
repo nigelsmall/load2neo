@@ -1,9 +1,0 @@
-:Queen:=>(liz)
-(liz:Person:Queen {"name":"Elizabeth"})<-[:MARRIED]->(phil:Person {"name":"Phillip"})
-(liz:Person)<-[:MOTHER]-(chaz:Person)
-(kate)<-[:MOTHER]-(george)-[:FATHER]->(will)-[:FATHER]->(chaz)<-[:FATHER]-(harry)
-(bob:Person {"unrelated":true})
-
-~~~~
-
-:Queen:name:=>(liz {"name":"Elizabeth II")

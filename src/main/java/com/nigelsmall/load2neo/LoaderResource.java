@@ -1,5 +1,5 @@
 /*
- * Copyright 2013, Nigel Small
+ * Copyright 2013-2014, Nigel Small
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package com.nigelsmall.load2neo.rest;
+package com.nigelsmall.load2neo;
 
+import com.nigelsmall.geoff.Subgraph;
+import com.nigelsmall.geoff.loader.NeoLoader;
 import com.nigelsmall.geoff.reader.GeoffReader;
-import com.nigelsmall.load2neo.NeoLoader;
-import com.nigelsmall.load2neo.Subgraph;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
