@@ -27,7 +27,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
-@Path("/all-the-things")
+@Path("/all_the_things")
 public class AllTheThingsResource {
 
     private final GraphDatabaseService database;
