@@ -19,7 +19,7 @@ dependencies {
 }
 
 group = 'com.nigelsmall'
-version = '0.5.0'
+version = '0.6.0'
 jar {
     manifest {
         attributes 'Implementation-Title': 'load2neo', 'Implementation-Version': version
